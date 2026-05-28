@@ -32,12 +32,17 @@ def main(argv: list[str] | None = None) -> int:
 
     build_p = sub.add_parser("build")
     build_p.add_argument("--mode", choices=["weekly_full", "full", "incremental", "incremental_manifest"], default="weekly_full")
+    build_p.add_argument("--json", action="store_true", help="Accepted for consistency; build output is JSON by default.")
 
     update_p = sub.add_parser("update")
     update_p.add_argument("--mode", choices=["incremental", "incremental_manifest"], default="incremental_manifest")
-    sub.add_parser("incremental")
-    sub.add_parser("status")
-    sub.add_parser("doctor")
+    update_p.add_argument("--json", action="store_true", help="Accepted for consistency; update output is JSON by default.")
+    incremental_p = sub.add_parser("incremental")
+    incremental_p.add_argument("--json", action="store_true", help="Accepted for consistency; incremental output is JSON by default.")
+    status_p = sub.add_parser("status")
+    status_p.add_argument("--json", action="store_true", help="Accepted for consistency; status output is JSON by default.")
+    doctor_p = sub.add_parser("doctor")
+    doctor_p.add_argument("--json", action="store_true", help="Accepted for consistency; doctor output is JSON by default.")
 
     sp = sub.add_parser("search")
     sp.add_argument("query")

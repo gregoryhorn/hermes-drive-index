@@ -92,14 +92,13 @@ A sanitized template is available at [`examples/config.example.toml`](examples/c
 Check package and plugin health:
 
 ```bash
-hermes-drive-index doctor
+hermes-drive-index doctor --json
 ```
 
-Build or update the local Google Drive index:
-
+Build or update the local Google Drive index. These commands emit JSON by default; `--json` is also accepted for script consistency:
 ```bash
-hermes-drive-index build --mode weekly_full
-hermes-drive-index update --mode incremental_manifest
+hermes-drive-index build --mode weekly_full --json
+hermes-drive-index update --mode incremental_manifest --json
 ```
 
 Search indexed Drive documents:
@@ -111,7 +110,7 @@ hermes-drive-index search "project plan" --top 5 --json
 Inspect index status:
 
 ```bash
-hermes-drive-index status
+hermes-drive-index status --json
 ```
 
 ## Hermes Agent tools

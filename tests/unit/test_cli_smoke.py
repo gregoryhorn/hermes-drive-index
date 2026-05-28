@@ -24,6 +24,14 @@ def test_status_reports_missing_db(tmp_path, monkeypatch, capsys):
     assert payload["exists"] is False
 
 
+def test_status_accepts_json_flag(tmp_path, monkeypatch, capsys):
+    db = tmp_path / "nope.db"
+    monkeypatch.setenv("HERMES_DRIVE_INDEX_DB_PATH", str(db))
+    assert cli.main(["status", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["exists"] is False
+
+
 def test_doctor_reports_status_and_entry_points(tmp_path, monkeypatch, capsys):
     db = tmp_path / "nope.db"
     monkeypatch.setenv("HERMES_DRIVE_INDEX_DB_PATH", str(db))
