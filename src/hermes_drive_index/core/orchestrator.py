@@ -10,7 +10,7 @@ import uuid
 
 from hermes_drive_index.config import DriveIndexConfig
 from .crawler import build_drive_service, crawl
-from .index import existing_files, index_file, init_db, insert_skipped_file, delete_file_from_index, update_file_metadata
+from .index import existing_files, index_file, init_db, insert_skipped_file, delete_file_from_index, migrate, update_file_metadata
 from .manifest import plan_incremental_actions
 from .models import is_indexable
 from .search import search_db, status_db
@@ -94,6 +94,7 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
     files_by_id = {f.id: f for f in files}
     con = sqlite3.connect(cfg.db_path)
     con.row_factory = sqlite3.Row
+    migrate(con)
     current = existing_files(con)
     plan = plan_incremental_actions(files, current)
     metrics = {

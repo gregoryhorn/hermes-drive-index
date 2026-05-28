@@ -5,3 +5,11 @@ root_folder_name = "Personal Files"
 # root_folder_id = "your-google-drive-folder-id"
 # base_dir = "/home/you/.hermes/drive_index/personal_files"
 # db_path = "/home/you/.hermes/drive_index/personal_files/index.db"
+
+# OCR is not implemented yet; these slots are reserved and default to off.
+# Leave disabled unless/until OCR support ships.
+# ocr_enabled = false
+# ocr_image_enabled = false
+# Optional folder scoping (paths relative to the root folder). Empty = all.
+# include_folders = []
+# exclude_folders = ["Photos"]

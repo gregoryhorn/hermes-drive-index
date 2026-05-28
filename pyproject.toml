@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hermes-drive-index"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Private local Google Drive full-text search index and Hermes Agent plugin powered by SQLite FTS5"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 authors = [{name = "Hermes Agent"}]
 keywords = [
   "hermes-agent",
@@ -24,7 +24,6 @@ keywords = [
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Topic :: Database :: Database Engines/Servers",
@@ -45,6 +44,9 @@ hermes-drive-index = "hermes_drive_index.cli:main"
 
 [project.entry-points."hermes_agent.plugins"]
 drive_index = "hermes_drive_index.hermes_adapter"
+
+[tool.setuptools.dynamic]
+version = {attr = "hermes_drive_index.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

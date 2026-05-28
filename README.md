@@ -46,7 +46,7 @@ The package separates Drive crawling, text extraction, SQLite indexing, search, 
 
 ## Install
 
-> Current status: this repository is designed for self hosted heremes. It is designed for local/private use first; review privacy notes before any public release.
+> Current status: this repository is designed for self-hosted Hermes and is undergoing real-world validation in Gregory's local environment. It is designed for local/private use first; review privacy notes before any public release.
 
 From this repository:
 
@@ -92,14 +92,13 @@ A sanitized template is available at [`examples/config.example.toml`](examples/c
 Check package and plugin health:
 
 ```bash
-hermes-drive-index doctor
+hermes-drive-index doctor --json
 ```
 
-Build or update the local Google Drive index:
-
+Build or update the local Google Drive index. These commands emit JSON by default; `--json` is also accepted for script consistency:
 ```bash
-hermes-drive-index build --mode weekly_full
-hermes-drive-index update --mode incremental_manifest
+hermes-drive-index build --mode weekly_full --json
+hermes-drive-index update --mode incremental_manifest --json
 ```
 
 Search indexed Drive documents:
@@ -111,7 +110,7 @@ hermes-drive-index search "project plan" --top 5 --json
 Inspect index status:
 
 ```bash
-hermes-drive-index status
+hermes-drive-index status --json
 ```
 
 ## Hermes Agent tools
@@ -169,7 +168,7 @@ Run the unit tests:
 python -m pytest -q
 ```
 
-The test suite includes public-data guard checks to reduce the risk of committing private Drive IDs, local DB paths, tokens, or dogfood-only values.
+The test suite includes public-data guard checks to reduce the risk of committing private Drive IDs, local DB paths, tokens, or local-only values.
 
 ## Roadmap
 

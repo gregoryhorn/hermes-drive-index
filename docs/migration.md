@@ -9,6 +9,10 @@ This guide explains how to move from a local prototype or direct Hermes `site-pa
 - Local/private runtime configuration stays outside the repository.
 - The existing SQLite DB schema is preserved so a live index can migrate without a forced full rebuild.
 
+The packaged CLI / plugin path is the **primary** integration. The legacy direct
+`site-packages` tool wrapper is **rollback-only**: keep it available until one
+package-CLI cron run succeeds, then disable the static wiring.
+
 ## 1. Install the package
 
 From the repository root:

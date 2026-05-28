@@ -3,6 +3,17 @@
 Handlers are deliberately stateless: they parse args, call package API functions,
 and return JSON strings. This avoids long-lived wrapper defaults drifting from the
 core implementation.
+
+Adapter contract (stable, relied on by Hermes):
+
+* Every handler returns a JSON **string** with a top-level ``success`` bool and a
+  ``package_version`` field, on both the success and error paths. Errors never
+  raise out of the handler — they are reported as ``{"success": false, "error": ...}``.
+* ``check_drive_index_requirements`` intentionally returns ``True`` so the tools
+  stay discoverable; any real failure surfaces as a structured error at call time.
+* ``drive_index_search`` clamps ``top_k`` to the range 1–25.
+* ``drive_index_update`` is long-running and is the same code path the CLI uses,
+  so it is safe to drive from a cron wrapper (``hermes-drive-index update``).
 """
 
 from __future__ import annotations
@@ -83,29 +94,49 @@ DRIVE_INDEX_UPDATE_SCHEMA: dict[str, Any] = {
 }
 
 
+#: Single source of truth for the registered tools. Both Hermes entry points
+#: (``register(ctx)`` and ``register_tools(registry)``) iterate this list, so the
+#: two code paths cannot drift. Keep names and schemas byte-stable.
+TOOL_SPECS: list[dict[str, Any]] = [
+    {
+        "name": "drive_index_search",
+        "toolset": "drive_index",
+        "schema": DRIVE_INDEX_SEARCH_SCHEMA,
+        "handler": lambda args, **kw: drive_index_search(query=args.get("query", ""), top_k=args.get("top_k", 8)),
+        "check_fn": check_drive_index_requirements,
+        "emoji": "🗂️",
+    },
+    {
+        "name": "drive_index_status",
+        "toolset": "drive_index",
+        "schema": DRIVE_INDEX_STATUS_SCHEMA,
+        "handler": lambda args, **kw: drive_index_status(),
+        "check_fn": check_drive_index_requirements,
+        "emoji": "🗂️",
+    },
+    {
+        "name": "drive_index_update",
+        "toolset": "drive_index",
+        "schema": DRIVE_INDEX_UPDATE_SCHEMA,
+        "handler": lambda args, **kw: drive_index_update(mode=args.get("mode", "incremental_manifest")),
+        "check_fn": check_drive_index_requirements,
+        "emoji": "🗂️",
+        "max_result_size_chars": 20000,
+    },
+]
+
+
+def plugin_context_spec(spec: dict[str, Any]) -> dict[str, Any]:
+    """Return the subset accepted by Hermes ``PluginContext.register_tool``.
+
+    The legacy registry path accepts adapter-only metadata such as
+    ``max_result_size_chars``. The pip-plugin ``PluginContext`` path historically
+    received only the core registration fields, so keep that compatibility while
+    still deriving both paths from the same ``TOOL_SPECS`` list.
+    """
+    return {key: spec[key] for key in ("name", "toolset", "schema", "handler", "check_fn", "emoji")}
+
+
 def register_tools(registry, **_: Any) -> None:
-    registry.register(
-        name="drive_index_search",
-        toolset="drive_index",
-        schema=DRIVE_INDEX_SEARCH_SCHEMA,
-        handler=lambda args, **kw: drive_index_search(query=args.get("query", ""), top_k=args.get("top_k", 8)),
-        check_fn=check_drive_index_requirements,
-        emoji="🗂️",
-    )
-    registry.register(
-        name="drive_index_status",
-        toolset="drive_index",
-        schema=DRIVE_INDEX_STATUS_SCHEMA,
-        handler=lambda args, **kw: drive_index_status(),
-        check_fn=check_drive_index_requirements,
-        emoji="🗂️",
-    )
-    registry.register(
-        name="drive_index_update",
-        toolset="drive_index",
-        schema=DRIVE_INDEX_UPDATE_SCHEMA,
-        handler=lambda args, **kw: drive_index_update(mode=args.get("mode", "incremental_manifest")),
-        check_fn=check_drive_index_requirements,
-        emoji="🗂️",
-        max_result_size_chars=20000,
-    )
+    for spec in TOOL_SPECS:
+        registry.register(**spec)

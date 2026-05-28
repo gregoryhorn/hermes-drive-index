@@ -17,12 +17,12 @@ GENERIC_FORBIDDEN_PATTERNS = [
 
 
 def _private_patterns_from_env() -> list[str]:
-    """Optional local-only dogfood patterns, not stored in the public repo."""
+    """Optional local-only validation patterns, not stored in the public repo."""
     raw = os.getenv("HERMES_DRIVE_INDEX_PRIVATE_GUARD_PATTERNS", "")
     return [item for item in raw.split(os.pathsep) if item]
 
 
-def test_no_private_dogfood_values_or_databases_committed():
+def test_no_private_validation_values_or_databases_committed():
     root = pathlib.Path(__file__).resolve().parents[2]
     offenders = []
     local_private_patterns = _private_patterns_from_env()

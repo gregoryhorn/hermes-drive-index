@@ -7,10 +7,13 @@ import re
 import sqlite3
 import time
 
+from .index import migrate
+
 
 def search_db(db_path: Path, query: str, top_k: int = 8) -> dict:
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
+    migrate(con)
     start = time.time()
     q = " ".join(re.findall(r"[\w]+", query)) or query
     raw_limit = max(top_k * 6, top_k)
@@ -59,6 +62,7 @@ def status_db(db_path: Path) -> dict:
         return {"exists": False, "path": str(db_path)}
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
+    migrate(con)
     counts = dict(con.execute("select status, count(*) c from files group by status").fetchall())
     last = con.execute("select * from runs order by started_at desc limit 1").fetchone()
     return {"exists": True, "path": str(db_path), "db_bytes": db_path.stat().st_size, "counts": counts, "last_run": dict(last) if last else None}
