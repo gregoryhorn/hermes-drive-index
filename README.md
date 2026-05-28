@@ -46,7 +46,7 @@ The package separates Drive crawling, text extraction, SQLite indexing, search, 
 
 ## Install
 
-> Current status: this repository is in private dogfood packaging form. It is designed for local/private use first; review privacy notes before any public release.
+> Current status: this repository is designed for self hosted heremes. It is designed for local/private use first; review privacy notes before any public release.
 
 From this repository:
 
