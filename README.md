@@ -46,7 +46,7 @@ The package separates Drive crawling, text extraction, SQLite indexing, search, 
 
 ## Install
 
-> Current status: this repository is undergoing real-world validation in a local (Gregory local environment) setup. It is designed for local/private use first; review privacy notes before any public release.
+> Current status: this repository is designed for self-hosted Hermes and is undergoing real-world validation in Gregory's local environment. It is designed for local/private use first; review privacy notes before any public release.
 
 From this repository:
 
