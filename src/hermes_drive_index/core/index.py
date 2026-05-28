@@ -12,12 +12,16 @@ from .extract import chunk_text, extract_text
 from .models import DriveFile
 from .utils import now_iso
 
+#: Current on-disk index schema version. Bumped only when the schema changes.
+SCHEMA_VERSION = "1"
+
 
 def init_db(path: Path) -> sqlite3.Connection:
     con = sqlite3.connect(path)
     con.executescript(
         """
         pragma journal_mode=WAL;
+        create table meta(key text primary key, value text);
         create table files(
           file_id text primary key,
           name text,
@@ -62,7 +66,36 @@ def init_db(path: Path) -> sqlite3.Connection:
         );
         """
     )
+    con.execute("insert or replace into meta(key, value) values ('schema_version', ?)", (SCHEMA_VERSION,))
+    con.commit()
     return con
+
+
+def read_schema_version(con: sqlite3.Connection) -> str | None:
+    """Return the stored schema version, or ``None`` for legacy/pre-meta DBs.
+
+    A missing ``meta`` table (older indexes built before this column existed) is
+    treated as the legacy sentinel ``None``, which callers handle as "v1".
+    """
+    try:
+        row = con.execute("select value from meta where key='schema_version'").fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+    return row[0] if not isinstance(row, sqlite3.Row) else row["value"]
+
+
+def migrate(con: sqlite3.Connection) -> None:
+    """No-op migration hook.
+
+    Current and legacy (``None``) versions need no migration. An unrecognized
+    future version raises so we never silently operate on an incompatible DB.
+    """
+    version = read_schema_version(con)
+    if version in (None, SCHEMA_VERSION):
+        return
+    raise RuntimeError(f"Unknown index schema version {version!r}; upgrade hermes-drive-index to open this DB.")
 
 
 def insert_skipped_file(con: sqlite3.Connection, f: DriveFile) -> None:

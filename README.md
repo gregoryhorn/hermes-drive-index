@@ -46,7 +46,7 @@ The package separates Drive crawling, text extraction, SQLite indexing, search, 
 
 ## Install
 
-> Current status: this repository is in private dogfood packaging form. It is designed for local/private use first; review privacy notes before any public release.
+> Current status: this repository is undergoing real-world validation in a local (Gregory local environment) setup. It is designed for local/private use first; review privacy notes before any public release.
 
 From this repository:
 
@@ -169,7 +169,7 @@ Run the unit tests:
 python -m pytest -q
 ```
 
-The test suite includes public-data guard checks to reduce the risk of committing private Drive IDs, local DB paths, tokens, or dogfood-only values.
+The test suite includes public-data guard checks to reduce the risk of committing private Drive IDs, local DB paths, tokens, or local-only values.
 
 ## Roadmap
 
