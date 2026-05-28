@@ -1,0 +1,45 @@
+"""Data models and constants for Drive indexing."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+GOOGLE_FOLDER = "application/vnd.google-apps.folder"
+GOOGLE_DOC = "application/vnd.google-apps.document"
+GOOGLE_SHEET = "application/vnd.google-apps.spreadsheet"
+GOOGLE_SLIDE = "application/vnd.google-apps.presentation"
+PHOTO_PREFIX = "image/"
+VIDEO_PREFIX = "video/"
+
+INDEXABLE_MIMES = {
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+    "application/json",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword",
+    GOOGLE_DOC,
+    GOOGLE_SHEET,
+    GOOGLE_SLIDE,
+}
+
+
+@dataclass
+class DriveFile:
+    id: str
+    name: str
+    mime_type: str
+    path: str
+    size: int
+    modified_time: str | None
+    md5_checksum: str | None
+    web_view_link: str | None
+
+
+def is_indexable(f: DriveFile) -> bool:
+    if f.mime_type == GOOGLE_FOLDER:
+        return False
+    if f.mime_type.startswith(PHOTO_PREFIX) or f.mime_type.startswith(VIDEO_PREFIX):
+        return False
+    return f.mime_type in INDEXABLE_MIMES or f.mime_type.startswith("text/")

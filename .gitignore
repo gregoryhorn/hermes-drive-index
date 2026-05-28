@@ -1,0 +1,38 @@
+# Secrets / creds
+*token*.json
+*client_secret*.json
+credentials*.json
+.env
+*.pem
+
+# Local index & data
+*.db
+*.sqlite
+*.sqlite3
+*manifest*.json
+!tests/fixtures/fake_manifest_*.json
+
+# Local config / private eval
+config.toml
+golden_queries.yaml
+!*.example.*
+
+# Logs / private reports
+*.log
+PHASE_*_REPORT.md
+NEXT_STEPS_PLAN.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Local editor/OS
+.DS_Store
+.vscode/
+.idea/

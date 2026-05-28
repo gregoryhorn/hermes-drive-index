@@ -1,0 +1,7 @@
+# Example config. Copy to your local Hermes drive index config path and edit.
+# Do not commit real folder IDs or private paths.
+
+root_folder_name = "Personal Files"
+# root_folder_id = "your-google-drive-folder-id"
+# base_dir = "/home/you/.hermes/drive_index/personal_files"
+# db_path = "/home/you/.hermes/drive_index/personal_files/index.db"
