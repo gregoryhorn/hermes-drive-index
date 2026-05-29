@@ -48,15 +48,21 @@ def build_index(cfg: DriveIndexConfig) -> dict:
         "files_failed": 0,
         "bytes_downloaded": 0,
         "chunks": 0,
+        "files_indexed_native": 0,
+        "files_indexed_ocr": 0,
+        "files_metadata_only": 0,
+        "ocr_attempted": 0,
+        "ocr_failed": 0,
+        "ocr_skipped_unavailable": 0,
         "errors": [],
     }
     for f in files:
-        if not is_indexable(f):
+        if not is_indexable(f, ocr_image_enabled=cfg.ocr_image_enabled):
             metrics["files_skipped"] += 1
             insert_skipped_file(con, f)
             continue
         try:
-            index_file(con, service, cfg.cache_dir, f, metrics)
+            index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled)
             metrics["files_indexed"] += 1
         except Exception as e:
             metrics["files_failed"] += 1
@@ -96,7 +102,7 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
     con.row_factory = sqlite3.Row
     migrate(con)
     current = existing_files(con)
-    plan = plan_incremental_actions(files, current)
+    plan = plan_incremental_actions(files, current, ocr_image_enabled=cfg.ocr_image_enabled)
     metrics = {
         "run_id": run_id,
         "started_at": now_iso(),
@@ -107,6 +113,12 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
         "files_failed": 0,
         "bytes_downloaded": 0,
         "chunks": 0,
+        "files_indexed_native": 0,
+        "files_indexed_ocr": 0,
+        "files_metadata_only": 0,
+        "ocr_attempted": 0,
+        "ocr_failed": 0,
+        "ocr_skipped_unavailable": 0,
         "files_deleted": 0,
         "files_unchanged": len(plan["unchanged"]),
         "files_metadata_updated": 0,
@@ -128,7 +140,7 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
         for file_id in plan["reindex"]:
             f = files_by_id[file_id]
             try:
-                index_file(con, service, cfg.cache_dir, f, metrics)
+                index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled)
                 metrics["files_indexed"] += 1
                 metrics["files_reindexed"] += 1
             except Exception as e:

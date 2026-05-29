@@ -34,8 +34,7 @@ class DriveIndexConfig:
     db_path: Path
     google_api_dir: Path
     config_path: Path
-    # OCR slot (disabled by default; reserved for later additive work — no OCR
-    # logic is wired anywhere yet, these fields are only read here).
+    # OCR is disabled by default and consumed only when explicitly enabled.
     ocr_enabled: bool = False
     ocr_image_enabled: bool = False
     include_folders: tuple[str, ...] = ()

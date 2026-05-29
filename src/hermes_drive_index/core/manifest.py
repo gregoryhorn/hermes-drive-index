@@ -17,12 +17,12 @@ def file_changed(f: DriveFile, existing: dict | None) -> bool:
     return f.modified_time != existing.get("modified_time") or f.size != (existing.get("size_bytes") or 0)
 
 
-def plan_incremental_actions(files: list[DriveFile], current: dict[str, dict]) -> dict[str, list[str]]:
+def plan_incremental_actions(files: list[DriveFile], current: dict[str, dict], *, ocr_image_enabled: bool = False) -> dict[str, list[str]]:
     crawled_ids = {f.id for f in files}
     plan = {"reindex": [], "metadata_only": [], "unchanged": [], "skip": [], "delete": sorted(set(current) - crawled_ids)}
     for f in files:
         old = current.get(f.id)
-        if not is_indexable(f):
+        if not is_indexable(f, ocr_image_enabled=ocr_image_enabled):
             if old is None or old.get("name") != f.name or old.get("path") != f.path or old.get("mime_type") != f.mime_type:
                 plan["skip"].append(f.id)
             else:

@@ -6,10 +6,11 @@ root_folder_name = "Personal Files"
 # base_dir = "/home/you/.hermes/drive_index/personal_files"
 # db_path = "/home/you/.hermes/drive_index/personal_files/index.db"
 
-# OCR is not implemented yet; these slots are reserved and default to off.
-# Leave disabled unless/until OCR support ships.
+# Optional OCR defaults to off. PDF OCR uses ocrmypdf; image OCR uses tesseract.
+# Missing OCR tools are non-fatal and fall back to metadata-only indexing.
 # ocr_enabled = false
 # ocr_image_enabled = false
 # Optional folder scoping (paths relative to the root folder). Empty = all.
+# For image OCR, prefer include_folders = ["Scanned Docs"] to avoid personal photos.
 # include_folders = []
 # exclude_folders = ["Photos"]
