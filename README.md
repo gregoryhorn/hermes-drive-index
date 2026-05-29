@@ -23,7 +23,7 @@ Live Google Drive search is useful, but it can be slow, rate-limited, and expens
 - **SQLite FTS5 full-text index** — fast local search over document chunks and metadata.
 - **Hermes Agent plugin** — exposes `drive_index_search`, `drive_index_status`, and `drive_index_update` as Hermes tools.
 - **Command-line interface** — use `hermes-drive-index search`, `status`, `update`, and `doctor` outside Hermes.
-- **Safe incremental updates** — manifest-diff updates skip unchanged files and avoid unnecessary downloads.
+- **Safe incremental updates** — manifest-diff updates skip unchanged files, update rename/move metadata, and remove rows for files that disappear from the crawled Drive tree.
 - **Document snippets and Drive links** — returns ranked snippets, file names, paths, and web links.
 - **Optional OCR** — opt-in OCR for scanned PDFs and supported image documents; disabled by default.
 - **Privacy-first defaults** — local DBs, tokens, manifests, and private folder IDs are excluded from the repo.
@@ -109,6 +109,7 @@ Build or update the local Google Drive index. These commands emit JSON by defaul
 ```bash
 hermes-drive-index build --mode weekly_full --json
 hermes-drive-index update --mode incremental_manifest --json
+hermes-drive-index --ocr update --mode reindex_metadata_only --json
 ```
 
 OCR is opt-in. Enable scanned-PDF OCR per run with `--ocr`; enable image OCR only for deliberately scoped document folders, because it makes supported `image/*` files indexable:
@@ -119,6 +120,8 @@ hermes-drive-index --ocr --ocr-image build --mode weekly_full --json
 ```
 
 For image OCR, prefer TOML folder scoping such as `include_folders = ["Scanned Docs"]` so personal photo folders are not swept into OCR indexing.
+
+After enabling OCR on an existing index, use `reindex_metadata_only` to retry only files currently indexed by filename/path metadata instead of doing a full rebuild.
 
 Search indexed Drive documents:
 
@@ -180,6 +183,16 @@ Core modules live under `src/hermes_drive_index/`:
 
 See [`docs/architecture.md`](docs/architecture.md) for design details.
 
+### Incremental delete/rename/move behavior
+
+Incremental updates use a fresh crawl plus manifest comparison, not Drive
+Changes API tokens. Source-backed details are documented in
+[`docs/architecture.md#deleted-trashed-renamed-and-moved-files`](docs/architecture.md#deleted-trashed-renamed-and-moved-files):
+files absent from the latest `trashed=false` crawl are removed from `files`,
+`chunks`, and `chunks_fts`; rename/path-only changes for the same `file_id` are
+applied as metadata-only updates; changed content is reindexed; and no tombstone
+rows are retained.
+
 ## Testing
 
 Run the unit tests:
@@ -193,7 +206,6 @@ The test suite includes public-data guard checks to reduce the risk of committin
 ## Roadmap
 
 - Fake Drive client and synthetic fixtures for network-free CI
-- OCR reindex controls for files that were metadata-only before OCR was enabled
 - Expanded evaluation metrics: Recall@1, Recall@5, MRR, latency, rebuild time
 - Public release hardening and docs cleanup
 - More configurable extraction backends

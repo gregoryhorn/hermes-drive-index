@@ -6,7 +6,7 @@ import argparse
 import json
 
 from . import __version__
-from .api import build_index, incremental_update, search, status
+from .api import build_index, incremental_update, reindex_metadata_only, search, status
 from .config import load_config
 
 
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     build_p.add_argument("--json", action="store_true", help="Accepted for consistency; build output is JSON by default.")
 
     update_p = sub.add_parser("update")
-    update_p.add_argument("--mode", choices=["incremental", "incremental_manifest"], default="incremental_manifest")
+    update_p.add_argument("--mode", choices=["incremental", "incremental_manifest", "reindex_metadata_only"], default="incremental_manifest")
     update_p.add_argument("--json", action="store_true", help="Accepted for consistency; update output is JSON by default.")
     incremental_p = sub.add_parser("incremental")
     incremental_p.add_argument("--json", action="store_true", help="Accepted for consistency; incremental output is JSON by default.")
@@ -61,7 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     if args.cmd in {"update", "incremental"}:
-        print(json.dumps(incremental_update(cfg), indent=2, ensure_ascii=False))
+        result = reindex_metadata_only(cfg) if args.cmd == "update" and args.mode == "reindex_metadata_only" else incremental_update(cfg)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     if args.cmd == "status":
         print(json.dumps(status(cfg), indent=2, ensure_ascii=False))
