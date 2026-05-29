@@ -22,7 +22,7 @@ import json
 from typing import Any
 
 from hermes_drive_index import __version__
-from hermes_drive_index.api import build_index, incremental_update, search, status
+from hermes_drive_index.api import build_index, incremental_update, reindex_metadata_only, search, status
 
 
 def check_drive_index_requirements() -> bool:
@@ -55,7 +55,12 @@ def drive_index_status() -> str:
 def drive_index_update(mode: str = "incremental_manifest") -> str:
     try:
         normalized = (mode or "incremental_manifest").strip().lower()
-        result = incremental_update() if normalized in {"incremental", "incremental_manifest"} else build_index()
+        if normalized in {"incremental", "incremental_manifest"}:
+            result = incremental_update()
+        elif normalized == "reindex_metadata_only":
+            result = reindex_metadata_only()
+        else:
+            result = build_index()
         result["requested_mode"] = mode
         return json.dumps({"success": True, "package_version": __version__, **result}, ensure_ascii=False)
     except Exception as exc:
@@ -87,7 +92,7 @@ DRIVE_INDEX_UPDATE_SCHEMA: dict[str, Any] = {
     "parameters": {
         "type": "object",
         "properties": {
-            "mode": {"type": "string", "description": "Update mode: incremental/incremental_manifest or weekly_full/full.", "default": "incremental_manifest"}
+            "mode": {"type": "string", "description": "Update mode: incremental/incremental_manifest, reindex_metadata_only, or weekly_full/full.", "default": "incremental_manifest"}
         },
         "required": [],
     },
