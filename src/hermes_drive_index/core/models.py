@@ -10,6 +10,7 @@ GOOGLE_SHEET = "application/vnd.google-apps.spreadsheet"
 GOOGLE_SLIDE = "application/vnd.google-apps.presentation"
 PHOTO_PREFIX = "image/"
 VIDEO_PREFIX = "video/"
+IMAGE_OCR_MIMES = {"image/png", "image/jpeg", "image/tiff", "image/bmp", "image/webp"}
 
 INDEXABLE_MIMES = {
     "application/pdf",
@@ -37,9 +38,11 @@ class DriveFile:
     web_view_link: str | None
 
 
-def is_indexable(f: DriveFile) -> bool:
+def is_indexable(f: DriveFile, *, ocr_image_enabled: bool = False) -> bool:
     if f.mime_type == GOOGLE_FOLDER:
         return False
-    if f.mime_type.startswith(PHOTO_PREFIX) or f.mime_type.startswith(VIDEO_PREFIX):
+    if f.mime_type.startswith(VIDEO_PREFIX):
         return False
+    if f.mime_type.startswith(PHOTO_PREFIX):
+        return ocr_image_enabled and f.mime_type in IMAGE_OCR_MIMES
     return f.mime_type in INDEXABLE_MIMES or f.mime_type.startswith("text/")

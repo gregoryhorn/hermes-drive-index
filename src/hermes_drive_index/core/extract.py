@@ -6,6 +6,13 @@ from pathlib import Path
 import re
 
 from .models import DriveFile, GOOGLE_DOC, GOOGLE_SHEET, GOOGLE_SLIDE
+from .ocr import ocr_image, ocr_pdf
+
+_LAST_TEXT_WAS_OCR = False
+
+
+def text_was_ocr() -> bool:
+    return _LAST_TEXT_WAS_OCR
 
 
 def extract_pdf(path: Path) -> str:
@@ -30,10 +37,23 @@ def extract_docx(path: Path) -> str:
     return "\n".join(p.text for p in d.paragraphs if p.text.strip())
 
 
-def extract_text(path: Path, f: DriveFile) -> str:
+def extract_text(path: Path, f: DriveFile, *, ocr_pdf_enabled: bool = False, ocr_image_enabled: bool = False) -> str:
+    global _LAST_TEXT_WAS_OCR
+    _LAST_TEXT_WAS_OCR = False
     mt = f.mime_type
     if mt == "application/pdf":
-        return extract_pdf(path)
+        text = extract_pdf(path)
+        if text.strip() or not ocr_pdf_enabled:
+            return text
+        ocr_text = ocr_pdf(path) or ""
+        _LAST_TEXT_WAS_OCR = bool(ocr_text.strip())
+        return ocr_text
+    if mt.startswith("image/"):
+        if not ocr_image_enabled:
+            return ""
+        ocr_text = ocr_image(path) or ""
+        _LAST_TEXT_WAS_OCR = bool(ocr_text.strip())
+        return ocr_text
     if mt == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         return extract_docx(path)
     if mt == "application/msword":

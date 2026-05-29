@@ -8,8 +8,9 @@ import sqlite3
 from typing import Any
 
 from .crawler import download_or_export
-from .extract import chunk_text, extract_text
+from .extract import chunk_text, extract_text, text_was_ocr
 from .models import DriveFile
+from .ocr import ocr_available
 from .utils import now_iso
 
 #: Current on-disk index schema version. Bumped only when the schema changes.
@@ -129,19 +130,51 @@ def update_file_metadata(con: sqlite3.Connection, f: DriveFile, existing: dict) 
     return 0
 
 
-def index_file(con: sqlite3.Connection, service: Any, cache_dir: Path, f: DriveFile, metrics: dict) -> None:
+def _metric(metrics: dict, key: str, amount: int = 1) -> None:
+    metrics[key] = metrics.get(key, 0) + amount
+
+
+def index_file(con: sqlite3.Connection, service: Any, cache_dir: Path, f: DriveFile, metrics: dict, *, ocr_pdf_enabled: bool = False, ocr_image_enabled: bool = False) -> None:
     delete_file_from_index(con, f.id)
     local = download_or_export(service, cache_dir, f)
     metrics["bytes_downloaded"] += local.stat().st_size if local and local.exists() else 0
-    text = extract_text(local, f) if local else ""
-    chunks = chunk_text(text) if text.strip() else []
     error = None
+    ocr_requested = (f.mime_type == "application/pdf" and ocr_pdf_enabled) or (f.mime_type.startswith("image/") and ocr_image_enabled)
+    ocr_unavailable = False
+    if ocr_requested:
+        kind = "image" if f.mime_type.startswith("image/") else "pdf"
+        if not ocr_available(kind):
+            ocr_unavailable = True
+            _metric(metrics, "ocr_skipped_unavailable")
+    try:
+        text = extract_text(local, f, ocr_pdf_enabled=ocr_pdf_enabled, ocr_image_enabled=ocr_image_enabled) if local else ""
+    except Exception as e:
+        if not ocr_requested:
+            raise
+        text = ""
+        if not ocr_unavailable:
+            _metric(metrics, "ocr_attempted")
+        _metric(metrics, "ocr_failed")
+        error = f"ocr failed: {e}"
+    chunks = chunk_text(text) if text.strip() else []
     if not chunks:
         status = "indexed_metadata"
-        error = "no text extracted; indexed filename/path metadata only"
+        if error is None:
+            if ocr_unavailable:
+                error = "OCR tool unavailable; indexed filename/path metadata only"
+            else:
+                error = "no text extracted; indexed filename/path metadata only"
+                if ocr_requested:
+                    _metric(metrics, "ocr_attempted")
+        _metric(metrics, "files_metadata_only")
         chunks = [f"{f.name}\n{f.path}\n{f.mime_type}"]
+    elif text_was_ocr():
+        status = "indexed_ocr"
+        _metric(metrics, "ocr_attempted")
+        _metric(metrics, "files_indexed_ocr")
     else:
         status = "indexed"
+        _metric(metrics, "files_indexed_native")
     con.execute(
         "insert or replace into files values (?,?,?,?,?,?,?,?,?,?,?)",
         (f.id, f.name, f.path, f.mime_type, f.size, f.modified_time, f.md5_checksum, f.web_view_link, now_iso(), status, error),

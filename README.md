@@ -25,9 +25,9 @@ Live Google Drive search is useful, but it can be slow, rate-limited, and expens
 - **Command-line interface** — use `hermes-drive-index search`, `status`, `update`, and `doctor` outside Hermes.
 - **Safe incremental updates** — manifest-diff updates skip unchanged files and avoid unnecessary downloads.
 - **Document snippets and Drive links** — returns ranked snippets, file names, paths, and web links.
-- **Metadata-only indexing** — records scanned/no-text files by filename/path until OCR is added.
+- **Optional OCR** — opt-in OCR for scanned PDFs and supported image documents; disabled by default.
 - **Privacy-first defaults** — local DBs, tokens, manifests, and private folder IDs are excluded from the repo.
-- **Future OCR path** — designed to add optional OCR for scanned PDFs without changing the public API.
+- **Metadata-only fallback** — OCR failures or unavailable OCR tools fall back to filename/path indexing instead of breaking builds.
 
 ## How it works
 
@@ -54,6 +54,14 @@ From this repository:
 python -m pip install -e '.[test]'
 hermes-drive-index doctor
 ```
+
+Optional OCR support keeps the default install lightweight. Install the extra only when you want local OCR helpers available:
+
+```bash
+python -m pip install -e '.[ocr]'
+```
+
+PDF OCR uses the external `ocrmypdf` command and image OCR uses `tesseract`; missing commands are treated as a non-fatal metadata-only fallback.
 
 For a `pipx`-installed Hermes Agent environment:
 
@@ -83,6 +91,8 @@ root_folder_name = "Personal Files"
 root_folder_id = "YOUR_GOOGLE_DRIVE_FOLDER_ID"
 base_dir = "/home/you/.hermes/drive_index/personal_files"
 db_path = "/home/you/.hermes/drive_index/personal_files/index.db"
+ocr_enabled = false       # scanned PDF OCR; default false
+ocr_image_enabled = false # image OCR; default false
 ```
 
 A sanitized template is available at [`examples/config.example.toml`](examples/config.example.toml).
@@ -100,6 +110,15 @@ Build or update the local Google Drive index. These commands emit JSON by defaul
 hermes-drive-index build --mode weekly_full --json
 hermes-drive-index update --mode incremental_manifest --json
 ```
+
+OCR is opt-in. Enable scanned-PDF OCR per run with `--ocr`; enable image OCR only for deliberately scoped document folders, because it makes supported `image/*` files indexable:
+
+```bash
+hermes-drive-index --ocr build --mode weekly_full --json
+hermes-drive-index --ocr --ocr-image build --mode weekly_full --json
+```
+
+For image OCR, prefer TOML folder scoping such as `include_folders = ["Scanned Docs"]` so personal photo folders are not swept into OCR indexing.
 
 Search indexed Drive documents:
 
@@ -151,6 +170,7 @@ Core modules live under `src/hermes_drive_index/`:
 
 - `core/crawler.py` — Drive metadata crawling and download/export helpers
 - `core/extract.py` — document text extraction and chunking
+- `core/ocr.py` — optional external-command OCR wrappers
 - `core/index.py` — SQLite schema and indexing operations
 - `core/manifest.py` — incremental update planning
 - `core/search.py` — SQLite FTS search and status
@@ -173,7 +193,7 @@ The test suite includes public-data guard checks to reduce the risk of committin
 ## Roadmap
 
 - Fake Drive client and synthetic fixtures for network-free CI
-- Optional OCR for scanned PDFs and image-only documents
+- OCR reindex controls for files that were metadata-only before OCR was enabled
 - Expanded evaluation metrics: Recall@1, Recall@5, MRR, latency, rebuild time
 - Public release hardening and docs cleanup
 - More configurable extraction backends

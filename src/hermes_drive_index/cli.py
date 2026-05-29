@@ -17,6 +17,8 @@ def _config_from_args(args: argparse.Namespace):
             "root_folder_id": args.root_folder_id,
             "db_path": args.db_path,
             "base_dir": args.base_dir,
+            "ocr_enabled": args.ocr_enabled,
+            "ocr_image_enabled": args.ocr_image_enabled,
         }
     )
 
@@ -28,6 +30,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root-folder-id", dest="root_folder_id", help="Drive root folder ID override.")
     parser.add_argument("--db-path", dest="db_path", help="Index DB path override.")
     parser.add_argument("--base-dir", dest="base_dir", help="Base directory override.")
+    parser.add_argument("--ocr", dest="ocr_enabled", action="store_true", default=None, help="Enable optional OCR for scanned PDFs.")
+    parser.add_argument("--no-ocr", dest="ocr_enabled", action="store_false", help="Disable OCR even if config/env enables it.")
+    parser.add_argument("--ocr-image", dest="ocr_image_enabled", action="store_true", default=None, help="Enable optional OCR indexing for supported image files.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     build_p = sub.add_parser("build")

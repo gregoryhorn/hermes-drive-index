@@ -39,3 +39,19 @@ def test_doctor_reports_status_and_entry_points(tmp_path, monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["package"] == "hermes-drive-index"
     assert payload["status"]["exists"] is False
+
+
+def test_ocr_flags_thread_to_config(tmp_path):
+    args = cli.argparse.Namespace(
+        config=None,
+        root_folder_id=None,
+        db_path=str(tmp_path / "index.db"),
+        base_dir=None,
+        ocr_enabled=True,
+        ocr_image_enabled=True,
+    )
+
+    cfg = cli._config_from_args(args)
+
+    assert cfg.ocr_enabled is True
+    assert cfg.ocr_image_enabled is True
