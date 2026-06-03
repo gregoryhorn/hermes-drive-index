@@ -26,6 +26,7 @@ Live Google Drive search is useful, but it can be slow, rate-limited, and expens
 - **Safe incremental updates** — manifest-diff updates skip unchanged files, update rename/move metadata, and remove rows for files that disappear from the crawled Drive tree.
 - **Document snippets and Drive links** — returns ranked snippets, file names, paths, and web links.
 - **Optional OCR** — opt-in OCR for scanned PDFs and supported image documents; disabled by default.
+- **Optional Drive auto-organization** — opt-in rename/move rules can standardize newly discovered documents during index runs.
 - **Privacy-first defaults** — local DBs, tokens, manifests, and private folder IDs are excluded from the repo.
 - **Metadata-only fallback** — OCR failures or unavailable OCR tools fall back to filename/path indexing instead of breaking builds.
 
@@ -93,6 +94,22 @@ base_dir = "/home/you/.hermes/drive_index/personal_files"
 db_path = "/home/you/.hermes/drive_index/personal_files/index.db"
 ocr_enabled = false       # scanned PDF OCR; default false
 ocr_image_enabled = false # image OCR; default false
+
+# Optional Drive organization. Disabled by default.
+[auto_organize]
+enabled = false
+# Keep true until you have reviewed planned actions in update metrics.
+dry_run = true
+# false = only newly discovered files; true = full-build/backfill behavior.
+apply_to_existing = false
+default_target_folder_path = "Personal Files/Documents/Unsorted"
+rename_template = "{date} - {category} - {title}{ext}"
+
+[[auto_organize.rules]]
+name = "receipts"
+pattern = "receipt|invoice|tax invoice"
+target_folder_path = "Personal Files/Finance/Receipts"
+category = "Receipt"
 ```
 
 A sanitized template is available at [`examples/config.example.toml`](examples/config.example.toml).
@@ -176,6 +193,7 @@ Core modules live under `src/hermes_drive_index/`:
 - `core/ocr.py` — optional external-command OCR wrappers
 - `core/index.py` — SQLite schema and indexing operations
 - `core/manifest.py` — incremental update planning
+- `core/organize.py` — optional Drive rename/move planning and application
 - `core/search.py` — SQLite FTS search and status
 - `core/orchestrator.py` — build/update orchestration
 - `hermes_adapter/` — Hermes plugin registration and JSON tool wrappers

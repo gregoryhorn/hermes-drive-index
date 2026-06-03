@@ -14,3 +14,19 @@ root_folder_name = "Personal Files"
 # For image OCR, prefer include_folders = ["Scanned Docs"] to avoid personal photos.
 # include_folders = []
 # exclude_folders = ["Photos"]
+
+# Optional Drive auto-organization defaults to off. When enabled, index runs
+# can rename and move matching documents before indexing them. Start with
+# dry_run = true and inspect update metrics before allowing Drive mutations.
+# [auto_organize]
+# enabled = false
+# dry_run = true
+# apply_to_existing = false
+# default_target_folder_path = "Personal Files/Documents/Unsorted"
+# rename_template = "{date} - {category} - {title}{ext}"
+#
+# [[auto_organize.rules]]
+# name = "receipts"
+# pattern = "receipt|invoice|tax invoice"
+# target_folder_path = "Personal Files/Finance/Receipts"
+# category = "Receipt"
