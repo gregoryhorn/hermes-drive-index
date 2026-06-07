@@ -13,10 +13,12 @@ the same paths as before when no overrides are supplied.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import os
 import tomllib
+
+from hermes_drive_index.core.organize import OrganizeConfig, OrganizeRule
 
 try:
     from hermes_constants import get_hermes_home
@@ -39,6 +41,7 @@ class DriveIndexConfig:
     ocr_image_enabled: bool = False
     include_folders: tuple[str, ...] = ()
     exclude_folders: tuple[str, ...] = ()
+    auto_organize: OrganizeConfig = field(default_factory=OrganizeConfig)
 
 
 def _local_config_path(hermes_home: Path, override: str | None = None) -> Path:
@@ -82,6 +85,32 @@ def _as_tuple(value) -> tuple[str, ...]:
     return tuple(item for item in str(value).split(os.pathsep) if item.strip())
 
 
+def _organize_config(local: dict, overrides: dict) -> OrganizeConfig:
+    raw_candidate = local.get("auto_organize")
+    raw: dict = raw_candidate if isinstance(raw_candidate, dict) else {}
+    rules_raw = raw.get("rules") or []
+    rules = tuple(
+        OrganizeRule(
+            name=str(item.get("name") or item.get("category") or "rule"),
+            pattern=str(item.get("pattern") or ".*"),
+            target_folder_path=str(item.get("target_folder_path") or item.get("target") or ""),
+            category=str(item.get("category")) if item.get("category") is not None else None,
+            rename_template=str(item.get("rename_template")) if item.get("rename_template") is not None else None,
+        )
+        for item in rules_raw
+        if isinstance(item, dict) and (item.get("target_folder_path") or item.get("target"))
+    )
+    dry_raw = _pick(overrides.get("auto_organize_dry_run"), "HERMES_DRIVE_INDEX_AUTO_ORGANIZE_DRY_RUN", raw, "dry_run")
+    return OrganizeConfig(
+        enabled=_as_bool(_pick(overrides.get("auto_organize_enabled"), "HERMES_DRIVE_INDEX_AUTO_ORGANIZE", raw, "enabled")),
+        dry_run=_as_bool(dry_raw) if dry_raw is not None else True,
+        apply_to_existing=_as_bool(_pick(overrides.get("auto_organize_apply_to_existing"), "HERMES_DRIVE_INDEX_AUTO_ORGANIZE_APPLY_TO_EXISTING", raw, "apply_to_existing")),
+        default_target_folder_path=_pick(overrides.get("auto_organize_default_target_folder_path"), "HERMES_DRIVE_INDEX_AUTO_ORGANIZE_DEFAULT_TARGET", raw, "default_target_folder_path"),
+        rename_template=str(_pick(overrides.get("auto_organize_rename_template"), "HERMES_DRIVE_INDEX_AUTO_ORGANIZE_RENAME_TEMPLATE", raw, "rename_template") or "{date} - {category} - {title}{ext}"),
+        rules=rules,
+    )
+
+
 def load_config(overrides: dict | None = None) -> DriveIndexConfig:
     """Resolve configuration following explicit > env > TOML > default precedence.
 
@@ -113,6 +142,7 @@ def load_config(overrides: dict | None = None) -> DriveIndexConfig:
     ocr_image_enabled = _as_bool(_pick(overrides.get("ocr_image_enabled"), "HERMES_DRIVE_INDEX_OCR_IMAGE", local, "ocr_image_enabled"))
     include_folders = _as_tuple(_pick(overrides.get("include_folders"), "HERMES_DRIVE_INDEX_INCLUDE_FOLDERS", local, "include_folders"))
     exclude_folders = _as_tuple(_pick(overrides.get("exclude_folders"), "HERMES_DRIVE_INDEX_EXCLUDE_FOLDERS", local, "exclude_folders"))
+    auto_organize = _organize_config(local, overrides)
 
     return DriveIndexConfig(
         root_folder_id=root_folder_id,
@@ -126,6 +156,7 @@ def load_config(overrides: dict | None = None) -> DriveIndexConfig:
         ocr_image_enabled=ocr_image_enabled,
         include_folders=include_folders,
         exclude_folders=exclude_folders,
+        auto_organize=auto_organize,
     )
 
 

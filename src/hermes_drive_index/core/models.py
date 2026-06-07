@@ -36,6 +36,7 @@ class DriveFile:
     modified_time: str | None
     md5_checksum: str | None
     web_view_link: str | None
+    parents: tuple[str, ...] = ()
 
 
 def is_indexable(f: DriveFile, *, ocr_image_enabled: bool = False) -> bool:

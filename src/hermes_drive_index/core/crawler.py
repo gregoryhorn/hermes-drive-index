@@ -44,6 +44,7 @@ def crawl(service: Any, root_id: str, root_name: str) -> list[DriveFile]:
                     modified_time=f.get("modifiedTime"),
                     md5_checksum=f.get("md5Checksum"),
                     web_view_link=f.get("webViewLink"),
+                    parents=tuple(f.get("parents") or ()),
                 )
                 out.append(df)
                 if df.mime_type == GOOGLE_FOLDER:

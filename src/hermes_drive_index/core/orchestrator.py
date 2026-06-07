@@ -13,6 +13,7 @@ from .crawler import build_drive_service, crawl
 from .index import existing_files, index_file, init_db, insert_skipped_file, delete_file_from_index, migrate, update_file_metadata
 from .manifest import plan_incremental_actions
 from .models import is_indexable
+from .organize import organize_files
 from .search import search_db, status_db
 from .utils import now_iso
 
@@ -55,6 +56,11 @@ def build_index(cfg: DriveIndexConfig) -> dict:
     start = time.time()
     run_id = str(uuid.uuid4())
     files = crawl(service, _root_id(cfg), cfg.root_folder_name)
+    organize_metrics = {"enabled": cfg.auto_organize.enabled, "skipped_reason": "full build requires apply_to_existing=true"}
+    if cfg.auto_organize.enabled and cfg.auto_organize.apply_to_existing:
+        organize_metrics = organize_files(service, _root_id(cfg), cfg.root_folder_name, files, cfg.auto_organize)
+        if organize_metrics.get("applied"):
+            files = crawl(service, _root_id(cfg), cfg.root_folder_name)
     tmp = cfg.base_dir / "index.new.db"
     if tmp.exists():
         tmp.unlink()
@@ -75,6 +81,7 @@ def build_index(cfg: DriveIndexConfig) -> dict:
         "ocr_attempted": 0,
         "ocr_failed": 0,
         "ocr_skipped_unavailable": 0,
+        "auto_organize": organize_metrics,
         "errors": [],
     }
     for f in files:
@@ -124,6 +131,12 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
     migrate(con)
     current = existing_files(con)
     plan = plan_incremental_actions(files, current, ocr_image_enabled=cfg.ocr_image_enabled)
+    organize_candidates = files if cfg.auto_organize.apply_to_existing else [files_by_id[file_id] for file_id in plan["reindex"] if file_id not in current]
+    organize_metrics = organize_files(service, _root_id(cfg), cfg.root_folder_name, organize_candidates, cfg.auto_organize)
+    if organize_metrics.get("applied"):
+        files = crawl(service, _root_id(cfg), cfg.root_folder_name)
+        files_by_id = {f.id: f for f in files}
+        plan = plan_incremental_actions(files, current, ocr_image_enabled=cfg.ocr_image_enabled)
     metrics = {
         "run_id": run_id,
         "started_at": now_iso(),
@@ -144,6 +157,7 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
         "files_unchanged": len(plan["unchanged"]),
         "files_metadata_updated": 0,
         "files_reindexed": 0,
+        "auto_organize": organize_metrics,
         "errors": [],
     }
     try:
