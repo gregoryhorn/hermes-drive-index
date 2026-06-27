@@ -59,12 +59,14 @@ def test_reindex_metadata_only_reindexes_only_metadata_rows(tmp_path, monkeypatc
     seed_file(con, skipped, "skipped")
     con.commit(); con.close()
     calls: list[str] = []
+    seen_pdf_args: list[tuple[str, ...]] = []
 
     monkeypatch.setattr(orchestrator_mod, "build_drive_service", lambda _path: object())
     monkeypatch.setattr(orchestrator_mod, "crawl", lambda *_args: [meta, indexed, skipped])
 
     def fake_index_file(_con, _service, _cache_dir, f, metrics, **kwargs):
         calls.append(f.id)
+        seen_pdf_args.append(kwargs["ocr_pdf_args"])
         metrics["files_indexed_ocr"] += 1
         metrics["chunks"] += 1
         _con.execute(
@@ -77,6 +79,7 @@ def test_reindex_metadata_only_reindexes_only_metadata_rows(tmp_path, monkeypatc
     result = reindex_metadata_only(c)
 
     assert calls == ["meta"]
+    assert seen_pdf_args == [("--rotate-pages", "--deskew")]
     assert result["mode"] == "reindex_metadata_only"
     assert result["files_considered"] == 1
     assert result["files_reindexed"] == 1

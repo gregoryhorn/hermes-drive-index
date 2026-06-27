@@ -88,7 +88,7 @@ def test_scanned_pdf_ocr_when_enabled(tmp_path, monkeypatch):
     path = tmp_path / "scan.pdf"
     path.write_bytes(b"%PDF scan")
     monkeypatch.setattr(extract, "extract_pdf", lambda _path: "")
-    monkeypatch.setattr(extract, "ocr_pdf", lambda _path: "scanned invoice text")
+    monkeypatch.setattr(extract, "ocr_pdf", lambda _path, **_kwargs: "scanned invoice text")
 
     assert extract.extract_text(path, drive_file(), ocr_pdf_enabled=True) == "scanned invoice text"
 

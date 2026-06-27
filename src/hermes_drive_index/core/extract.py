@@ -37,7 +37,15 @@ def extract_docx(path: Path) -> str:
     return "\n".join(p.text for p in d.paragraphs if p.text.strip())
 
 
-def extract_text(path: Path, f: DriveFile, *, ocr_pdf_enabled: bool = False, ocr_image_enabled: bool = False) -> str:
+def extract_text(
+    path: Path,
+    f: DriveFile,
+    *,
+    ocr_pdf_enabled: bool = False,
+    ocr_image_enabled: bool = False,
+    ocr_pdf_args: tuple[str, ...] = (),
+    ocr_image_args: tuple[str, ...] = (),
+) -> str:
     global _LAST_TEXT_WAS_OCR
     _LAST_TEXT_WAS_OCR = False
     mt = f.mime_type
@@ -45,13 +53,13 @@ def extract_text(path: Path, f: DriveFile, *, ocr_pdf_enabled: bool = False, ocr
         text = extract_pdf(path)
         if text.strip() or not ocr_pdf_enabled:
             return text
-        ocr_text = ocr_pdf(path) or ""
+        ocr_text = ocr_pdf(path, extra_args=ocr_pdf_args) or ""
         _LAST_TEXT_WAS_OCR = bool(ocr_text.strip())
         return ocr_text
     if mt.startswith("image/"):
         if not ocr_image_enabled:
             return ""
-        ocr_text = ocr_image(path) or ""
+        ocr_text = ocr_image(path, extra_args=ocr_image_args) or ""
         _LAST_TEXT_WAS_OCR = bool(ocr_text.strip())
         return ocr_text
     if mt == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":

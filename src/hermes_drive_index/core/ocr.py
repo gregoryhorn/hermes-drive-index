@@ -22,7 +22,7 @@ def ocr_available(kind: str) -> bool:
     return False
 
 
-def ocr_pdf(path: Path, *, timeout: int = 120) -> str | None:
+def ocr_pdf(path: Path, *, timeout: int = 120, extra_args: tuple[str, ...] = ()) -> str | None:
     """OCR a scanned PDF and return its extracted text, or ``None`` on failure."""
     if not ocr_available("pdf"):
         return None
@@ -32,7 +32,7 @@ def ocr_pdf(path: Path, *, timeout: int = 120) -> str | None:
         with tempfile.TemporaryDirectory(prefix="hermes-drive-index-ocr-") as tmpdir:
             out = Path(tmpdir) / "ocr.pdf"
             subprocess.run(
-                ["ocrmypdf", "--skip-text", "--quiet", str(path), str(out)],
+                ["ocrmypdf", "--skip-text", "--quiet", *extra_args, str(path), str(out)],
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -44,13 +44,13 @@ def ocr_pdf(path: Path, *, timeout: int = 120) -> str | None:
         return None
 
 
-def ocr_image(path: Path, *, timeout: int = 120) -> str | None:
+def ocr_image(path: Path, *, timeout: int = 120, extra_args: tuple[str, ...] = ()) -> str | None:
     """OCR an image and return text, or ``None`` on failure."""
     if not ocr_available("image"):
         return None
     try:
         proc = subprocess.run(
-            ["tesseract", str(path), "stdout", "--quiet"],
+            ["tesseract", str(path), "stdout", "--quiet", *extra_args],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,

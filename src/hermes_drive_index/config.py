@@ -20,6 +20,17 @@ import tomllib
 
 from hermes_drive_index.core.organize import OrganizeConfig, OrganizeRule
 
+DEFAULT_OCR_PDF_ARGS = ("--rotate-pages", "--deskew")
+_SAFE_OCRMYPDF_FLAGS_WITH_VALUES = {
+    "--image-dpi": str.isdigit,
+    "--tesseract-pagesegmode": str.isdigit,
+}
+_SAFE_OCRMYPDF_FLAGS = {
+    "--rotate-pages",
+    "--deskew",
+    "--remove-background",
+}
+
 try:
     from hermes_constants import get_hermes_home
 except Exception:  # pragma: no cover - used outside Hermes
@@ -39,6 +50,7 @@ class DriveIndexConfig:
     # OCR is disabled by default and consumed only when explicitly enabled.
     ocr_enabled: bool = False
     ocr_image_enabled: bool = False
+    ocr_pdf_args: tuple[str, ...] = DEFAULT_OCR_PDF_ARGS
     include_folders: tuple[str, ...] = ()
     exclude_folders: tuple[str, ...] = ()
     auto_organize: OrganizeConfig = field(default_factory=OrganizeConfig)
@@ -85,6 +97,29 @@ def _as_tuple(value) -> tuple[str, ...]:
     return tuple(item for item in str(value).split(os.pathsep) if item.strip())
 
 
+def _safe_ocr_pdf_args(value) -> tuple[str, ...]:
+    args = _as_tuple(value) or DEFAULT_OCR_PDF_ARGS
+    safe: list[str] = []
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg in _SAFE_OCRMYPDF_FLAGS:
+            safe.append(arg)
+            i += 1
+            continue
+        validator = _SAFE_OCRMYPDF_FLAGS_WITH_VALUES.get(arg)
+        if validator is None:
+            raise ValueError(f"Unsupported OCRmyPDF argument: {arg}")
+        if i + 1 >= len(args):
+            raise ValueError(f"OCRmyPDF argument requires a value: {arg}")
+        value_arg = args[i + 1]
+        if value_arg.startswith("--") or not validator(value_arg):
+            raise ValueError(f"Unsupported OCRmyPDF value for {arg}: {value_arg}")
+        safe.extend((arg, value_arg))
+        i += 2
+    return tuple(safe)
+
+
 def _organize_config(local: dict, overrides: dict) -> OrganizeConfig:
     raw_candidate = local.get("auto_organize")
     raw: dict = raw_candidate if isinstance(raw_candidate, dict) else {}
@@ -116,8 +151,9 @@ def load_config(overrides: dict | None = None) -> DriveIndexConfig:
 
     ``overrides`` keys map to ``DriveIndexConfig`` fields (``config_path``,
     ``base_dir``, ``root_folder_id``, ``root_folder_name``, ``google_api_dir``,
-    ``db_path``, ``ocr_enabled``, ``ocr_image_enabled``, ``include_folders``,
-    ``exclude_folders``). ``None`` values are ignored (treated as "not set").
+    ``db_path``, ``ocr_enabled``, ``ocr_image_enabled``, ``ocr_pdf_args``,
+    ``include_folders``, ``exclude_folders``). ``None`` values are ignored
+    (treated as "not set").
     """
     overrides = {k: v for k, v in (overrides or {}).items() if v is not None}
     hermes_home = Path(get_hermes_home())
@@ -140,6 +176,7 @@ def load_config(overrides: dict | None = None) -> DriveIndexConfig:
     )
     ocr_enabled = _as_bool(_pick(overrides.get("ocr_enabled"), "HERMES_DRIVE_INDEX_OCR", local, "ocr_enabled"))
     ocr_image_enabled = _as_bool(_pick(overrides.get("ocr_image_enabled"), "HERMES_DRIVE_INDEX_OCR_IMAGE", local, "ocr_image_enabled"))
+    ocr_pdf_args = _safe_ocr_pdf_args(_pick(overrides.get("ocr_pdf_args"), "HERMES_DRIVE_INDEX_OCR_PDF_ARGS", local, "ocr_pdf_args"))
     include_folders = _as_tuple(_pick(overrides.get("include_folders"), "HERMES_DRIVE_INDEX_INCLUDE_FOLDERS", local, "include_folders"))
     exclude_folders = _as_tuple(_pick(overrides.get("exclude_folders"), "HERMES_DRIVE_INDEX_EXCLUDE_FOLDERS", local, "exclude_folders"))
     auto_organize = _organize_config(local, overrides)
@@ -154,6 +191,7 @@ def load_config(overrides: dict | None = None) -> DriveIndexConfig:
         config_path=config_path,
         ocr_enabled=ocr_enabled,
         ocr_image_enabled=ocr_image_enabled,
+        ocr_pdf_args=ocr_pdf_args,
         include_folders=include_folders,
         exclude_folders=exclude_folders,
         auto_organize=auto_organize,
