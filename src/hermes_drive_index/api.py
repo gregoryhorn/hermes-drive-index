@@ -7,7 +7,10 @@ signatures the Hermes adapter relies on.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from .config import DriveIndexConfig, default_config
+from .core.benchmark import benchmark_ocr_parameters as _benchmark_ocr_parameters
 from .core.manifest import plan_incremental_actions
 from .core.models import DriveFile
 from .core.orchestrator import build_index as _build_index
@@ -29,6 +32,21 @@ def reindex_metadata_only(cfg: DriveIndexConfig | None = None) -> dict:
     return _reindex_metadata_only(cfg or default_config())
 
 
+def benchmark_ocr_parameters(
+    cfg: DriveIndexConfig | None = None,
+    *,
+    modes: list[str] | None = None,
+    limit: int | None = None,
+    golden_path: str | Path | None = None,
+) -> dict:
+    return _benchmark_ocr_parameters(
+        cfg or default_config(),
+        modes=modes,
+        limit=limit,
+        golden_path=Path(golden_path).expanduser() if golden_path else None,
+    )
+
+
 def search(query: str, top_k: int = 8, cfg: DriveIndexConfig | None = None) -> dict:
     return _search(cfg or default_config(), query=query, top_k=top_k)
 
@@ -37,4 +55,4 @@ def status(cfg: DriveIndexConfig | None = None) -> dict:
     return _status(cfg or default_config())
 
 
-__all__ = ["DriveFile", "plan_incremental_actions", "build_index", "incremental_update", "reindex_metadata_only", "search", "status"]
+__all__ = ["DriveFile", "plan_incremental_actions", "build_index", "incremental_update", "reindex_metadata_only", "benchmark_ocr_parameters", "search", "status"]

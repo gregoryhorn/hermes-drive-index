@@ -53,3 +53,18 @@ def test_ocr_env_toggles(tmp_path, monkeypatch):
     cfg = load_config({"config_path": str(tmp_path / "missing.toml")})
     assert cfg.ocr_enabled is True
     assert cfg.exclude_folders == ("Photos",)
+
+
+def test_ocr_pdf_args_accept_only_safe_preprocessing_args(tmp_path):
+    cfg = load_config({"config_path": str(tmp_path / "missing.toml"), "ocr_pdf_args": ["--rotate-pages", "--deskew", "--image-dpi", "300"]})
+
+    assert cfg.ocr_pdf_args == ("--rotate-pages", "--deskew", "--image-dpi", "300")
+
+
+def test_ocr_pdf_args_reject_sidecar_output(tmp_path):
+    try:
+        load_config({"config_path": str(tmp_path / "missing.toml"), "ocr_pdf_args": ["--sidecar", "/tmp/private.txt"]})
+    except ValueError as e:
+        assert "Unsupported OCRmyPDF argument" in str(e)
+    else:  # pragma: no cover - explicit assertion for readability
+        raise AssertionError("unsafe OCRmyPDF argument was accepted")

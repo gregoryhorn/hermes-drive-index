@@ -90,7 +90,7 @@ def build_index(cfg: DriveIndexConfig) -> dict:
             insert_skipped_file(con, f)
             continue
         try:
-            index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled)
+            index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled, ocr_pdf_args=cfg.ocr_pdf_args)
             metrics["files_indexed"] += 1
         except Exception as e:
             metrics["files_failed"] += 1
@@ -175,7 +175,7 @@ def incremental_update(cfg: DriveIndexConfig) -> dict:
         for file_id in plan["reindex"]:
             f = files_by_id[file_id]
             try:
-                index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled)
+                index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled, ocr_pdf_args=cfg.ocr_pdf_args)
                 metrics["files_indexed"] += 1
                 metrics["files_reindexed"] += 1
             except Exception as e:
@@ -229,7 +229,7 @@ def reindex_metadata_only(cfg: DriveIndexConfig) -> dict:
                 metrics["files_skipped"] += 1
                 continue
             try:
-                index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled)
+                index_file(con, service, cfg.cache_dir, f, metrics, ocr_pdf_enabled=cfg.ocr_enabled, ocr_image_enabled=cfg.ocr_image_enabled, ocr_pdf_args=cfg.ocr_pdf_args)
                 metrics["files_indexed"] += 1
                 metrics["files_reindexed"] += 1
             except Exception as e:

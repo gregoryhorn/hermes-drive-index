@@ -134,7 +134,18 @@ def _metric(metrics: dict, key: str, amount: int = 1) -> None:
     metrics[key] = metrics.get(key, 0) + amount
 
 
-def index_file(con: sqlite3.Connection, service: Any, cache_dir: Path, f: DriveFile, metrics: dict, *, ocr_pdf_enabled: bool = False, ocr_image_enabled: bool = False) -> None:
+def index_file(
+    con: sqlite3.Connection,
+    service: Any,
+    cache_dir: Path,
+    f: DriveFile,
+    metrics: dict,
+    *,
+    ocr_pdf_enabled: bool = False,
+    ocr_image_enabled: bool = False,
+    ocr_pdf_args: tuple[str, ...] = (),
+    ocr_image_args: tuple[str, ...] = (),
+) -> None:
     delete_file_from_index(con, f.id)
     local = download_or_export(service, cache_dir, f)
     metrics["bytes_downloaded"] += local.stat().st_size if local and local.exists() else 0
@@ -147,7 +158,14 @@ def index_file(con: sqlite3.Connection, service: Any, cache_dir: Path, f: DriveF
             ocr_unavailable = True
             _metric(metrics, "ocr_skipped_unavailable")
     try:
-        text = extract_text(local, f, ocr_pdf_enabled=ocr_pdf_enabled, ocr_image_enabled=ocr_image_enabled) if local else ""
+        text = extract_text(
+            local,
+            f,
+            ocr_pdf_enabled=ocr_pdf_enabled,
+            ocr_image_enabled=ocr_image_enabled,
+            ocr_pdf_args=ocr_pdf_args,
+            ocr_image_args=ocr_image_args,
+        ) if local else ""
     except Exception as e:
         if not ocr_requested:
             raise

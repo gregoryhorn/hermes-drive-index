@@ -1,6 +1,6 @@
 # Hermes Drive Index — Private Google Drive Search for Hermes Agent
 
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/) [![SQLite FTS5](https://img.shields.io/badge/search-SQLite%20FTS5-00bcd4)](https://www.sqlite.org/fts5.html) [![Hermes Plugin](https://img.shields.io/badge/Hermes-plugin-8a2be2)](https://github.com/NousResearch/hermes-agent)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/) [![SQLite FTS5](https://img.shields.io/badge/search-SQLite%20FTS5-00bcd4)](https://www.sqlite.org/fts5.html) [![Hermes Plugin](https://img.shields.io/badge/Hermes-plugin-8a2be2)](https://github.com/NousResearch/hermes-agent) [![Real-world validation](https://img.shields.io/badge/real--world%20validation-aggregate%20metrics-green)](docs/real-world-metrics.md)
 
 **Hermes Drive Index** is a local, private **Google Drive search engine for Hermes Agent**. It indexes Google Drive documents into a fast **SQLite full-text search (FTS5)** database so Hermes can find files, snippets, and Drive links in milliseconds instead of calling the Google Drive API for every lookup.
 
@@ -169,6 +169,12 @@ Suggested Hermes use cases:
 - receipt, lease, license, and PDF lookup
 - local RAG-style document search
 - AI assistant memory augmentation for private files
+
+## Real-world validation
+
+This repository includes a privacy-preserving evidence loop for a live local Drive Index. Public metrics are aggregate-only: counts, run status, latency, eval scores, and tool availability. Personal filenames, Google Drive paths, Drive IDs, snippets, raw eval cases, and private document contents are never published.
+
+Latest sanitized local snapshot: 618 files scanned in the most recent metadata-only reindex run, 94 native/full-text indexed files, 48 OCR-indexed files, 5 metadata-only files, 471 skipped files, 0 failed files, and fixed generic search latency averaging 3.264 ms. See [`docs/real-world-metrics.md`](docs/real-world-metrics.md) for reproduction commands, interpretation, and current evidence gaps.
 
 ## Privacy and security
 

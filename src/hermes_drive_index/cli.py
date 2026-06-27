@@ -6,7 +6,7 @@ import argparse
 import json
 
 from . import __version__
-from .api import build_index, incremental_update, reindex_metadata_only, search, status
+from .api import benchmark_ocr_parameters, build_index, incremental_update, reindex_metadata_only, search, status
 from .config import load_config
 
 
@@ -19,6 +19,7 @@ def _config_from_args(args: argparse.Namespace):
             "base_dir": args.base_dir,
             "ocr_enabled": args.ocr_enabled,
             "ocr_image_enabled": args.ocr_image_enabled,
+            "ocr_pdf_args": getattr(args, "ocr_pdf_args", None),
         }
     )
 
@@ -32,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base-dir", dest="base_dir", help="Base directory override.")
     parser.add_argument("--ocr", dest="ocr_enabled", action="store_true", default=None, help="Enable optional OCR for scanned PDFs.")
     parser.add_argument("--no-ocr", dest="ocr_enabled", action="store_false", help="Disable OCR even if config/env enables it.")
+    parser.add_argument("--ocr-pdf-arg", dest="ocr_pdf_args", action="append", help="Override OCRmyPDF preprocessing/config args with safe allowlisted args. Repeat for multiple args; defaults to rotate+deskew.")
     parser.add_argument("--ocr-image", dest="ocr_image_enabled", action="store_true", default=None, help="Enable optional OCR indexing for supported image files.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -48,6 +50,12 @@ def main(argv: list[str] | None = None) -> int:
     status_p.add_argument("--json", action="store_true", help="Accepted for consistency; status output is JSON by default.")
     doctor_p = sub.add_parser("doctor")
     doctor_p.add_argument("--json", action="store_true", help="Accepted for consistency; doctor output is JSON by default.")
+
+    bench_p = sub.add_parser("benchmark-ocr", help="Run read-only aggregate OCR parameter benchmark.")
+    bench_p.add_argument("--json", action="store_true", help="Accepted for consistency; benchmark output is JSON by default.")
+    bench_p.add_argument("--mode", dest="modes", action="append", help="Benchmark mode to run; repeat for multiple modes. Defaults to all built-in modes.")
+    bench_p.add_argument("--limit", type=int, help="Limit metadata-only candidates for a quick run.")
+    bench_p.add_argument("--golden", help="Golden query JSON path for private aggregate Recall@5/MRR.")
 
     sp = sub.add_parser("search")
     sp.add_argument("query")
@@ -71,6 +79,10 @@ def main(argv: list[str] | None = None) -> int:
         import importlib.metadata as metadata
         eps = [str(e) for e in metadata.entry_points(group="hermes_agent.plugins") if "hermes_drive_index" in str(e)]
         print(json.dumps({"package": "hermes-drive-index", "version": __version__, "plugin_entry_points": eps, "status": status(cfg)}, indent=2, ensure_ascii=False))
+        return 0
+    if args.cmd == "benchmark-ocr":
+        result = benchmark_ocr_parameters(cfg, modes=args.modes, limit=args.limit, golden_path=args.golden)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     if args.cmd == "search":
         result = search(args.query, args.top, cfg)
